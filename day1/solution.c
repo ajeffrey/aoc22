@@ -12,29 +12,17 @@ enum debug {
 
 #define CALORIE_BUFFER_SIZE 16
 #define HIGHEST_CALORIE_BUFFER_SIZE 3
-#define DEBUG Part2
-
-typedef struct food_t {
-	int calories;
-	struct food_t* next;
-} food_t;
+#define DEBUG None
 
 typedef struct elf_t {
-	food_t* food;
+	uint32_t calories;
 	struct elf_t* next;
 } elf_t;
-
-food_t* mkFood() {
-	food_t* food = (food_t*)malloc(sizeof(food_t));
-	food->calories = 0;
-	food->next = NULL;
-	return food;
-}
 
 elf_t* mkElf() {
 	elf_t* elf = (elf_t*)malloc(sizeof(elf_t));
 	elf->next = NULL;
-	elf->food = NULL;
+	elf->calories = 0;
 	return elf;
 }
 
@@ -43,7 +31,6 @@ elf_t* parseInput(const char* path) {
 
 	elf_t* root = NULL;
 	elf_t** cElf = &root;
-	food_t** cFood = NULL;
 
 	char* line = (char*)malloc(CALORIE_BUFFER_SIZE);
 	while(fgets(line, CALORIE_BUFFER_SIZE - 1, fp)) {
@@ -53,7 +40,6 @@ elf_t* parseInput(const char* path) {
 		if(!*cElf) {
 			DEBUG == Parser && printf("new elf\n");
 			*cElf = mkElf();
-			cFood = &((*cElf)->food);
 		}
 
 		// blank line - move off the current elf
@@ -65,38 +51,24 @@ elf_t* parseInput(const char* path) {
 		}
 
 		// non-blank line - new food
-		*cFood = mkFood();
-		(*cFood)->calories = atoi(line);
-		DEBUG == Parser && printf("new food (%i)\n", (*cFood)->calories);
-		cFood = &(*cFood)->next;
+		(*cElf)->calories += atoi(line);
 	}
 
 	free(line);
 	fclose(fp);
 
 	if(DEBUG == Parser) {
-		for(elf_t* rElf = root; rElf && rElf->food; rElf = rElf->next) {
-			printf("new elf\n");
-			for(food_t* rFood = rElf->food; rFood; rFood = rFood->next) {
-				printf("food: %i\n", rFood->calories);
-			}
+		for(elf_t* rElf = root; rElf; rElf = rElf->next) {
+			printf("elf (%u)\n", rElf->calories);
 		}
 	}
 
 	return root;
 }
 
-void freeFood(food_t* food) {
-	if(food) {
-		freeFood(food->next);
-		free(food);
-	}
-}
-
 void freeElf(elf_t* elf) {
 	if(elf) {
 		freeElf(elf->next);
-		freeFood(elf->food);
 		free(elf);
 	}
 }
@@ -105,13 +77,8 @@ uint32_t part1(elf_t* root) {
 	uint32_t highest = 0;
 	uint32_t current;
 	for(elf_t* celf = root; celf; celf = celf->next) {
-		current = 0;
-		for(food_t* cfood = celf->food; cfood; cfood = cfood->next) {
-			current += cfood->calories;
-		}
-
-		if(current > highest) {
-			highest = current;
+		if(celf->calories > highest) {
+			highest = celf->calories;
 		}
 	}
 
@@ -141,12 +108,7 @@ uint32_t part2(elf_t* root) {
 	uint32_t highest[HIGHEST_CALORIE_BUFFER_SIZE] = { 0, 0, 0 };
 	uint32_t current;
 	for(elf_t* celf = root; celf; celf = celf->next) {
-		current = 0;
-		for(food_t* cfood = celf->food; cfood; cfood = cfood->next) {
-			current += cfood->calories;
-		}
-
-		insertHighest(highest, current);
+		insertHighest(highest, celf->calories);
 	}
 
 	return highest[0] + highest[1] + highest[2];
