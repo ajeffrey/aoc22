@@ -1,0 +1,15 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+  echo "format: $0 directory"
+  exit -1
+fi
+
+INFILE="$1/solution.c"
+OUTFILE="$1/solution"
+
+gcc $INFILE -o $OUTFILE &&
+chmod +x $OUTFILE &&
+cd $1 &&
+(./solution;
+rm ./solution)

@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+  echo "format: $0 directory"
+  exit -1
+fi
+
+if [ -e "$1" ]; then
+  echo "$1 already exists"
+  exit -1
+fi
+
+cp -R .template $1
