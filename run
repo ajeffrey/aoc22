@@ -8,7 +8,7 @@ fi
 INFILE="$1/solution.c"
 OUTFILE="$1/solution"
 
-gcc $INFILE -o $OUTFILE &&
+gcc $INFILE -O3 -o $OUTFILE &&
 chmod +x $OUTFILE &&
 cd $1 &&
 (./solution;

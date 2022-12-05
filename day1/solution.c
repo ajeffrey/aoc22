@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <assert.h>
+#include <time.h>
 
 enum debug {
 	None = 0,
@@ -12,73 +13,69 @@ enum debug {
 
 #define CALORIE_BUFFER_SIZE 16
 #define HIGHEST_CALORIE_BUFFER_SIZE 3
+#define MAX_ELVES 1024
 #define DEBUG None
 
-typedef struct elf_t {
-	uint32_t calories;
-	struct elf_t* next;
-} elf_t;
+struct timespec start, end;
 
-elf_t* mkElf() {
-	elf_t* elf = (elf_t*)malloc(sizeof(elf_t));
-	elf->next = NULL;
-	elf->calories = 0;
-	return elf;
+void start_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 }
 
-elf_t* parseInput(const char* path) {
+void end_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
+    printf("= %.9fs\n", diff);
+}
+
+typedef struct input_t {
+	uint16_t total;
+	uint32_t elves[MAX_ELVES];
+} input_t;
+
+input_t parseInput(const char* path) {
 	FILE* fp = fopen(path, "r");
 
-	elf_t* root = NULL;
-	elf_t** cElf = &root;
+	input_t elves;
+	memset(elves.elves, 0x00, sizeof(uint32_t) * MAX_ELVES);
+	elves.total = 0;
 
-	char* line = (char*)malloc(CALORIE_BUFFER_SIZE);
-	while(fgets(line, CALORIE_BUFFER_SIZE - 1, fp)) {
-		DEBUG == Parser && printf("line: %s (%lu)\n", line, strlen(line));
-
-		// new elf
-		if(!*cElf) {
-			DEBUG == Parser && printf("new elf\n");
-			*cElf = mkElf();
+	char line[CALORIE_BUFFER_SIZE];
+	while(1) {
+		if(!fgets(line, CALORIE_BUFFER_SIZE - 1, fp)) {
+			elves.total += 1;
+			break;
 		}
+
+		DEBUG == Parser && printf("line: %s (%lu)\n", line, strlen(line));
 
 		// blank line - move off the current elf
 		// but don't create a new one - might be EOF
 		if(strlen(line) <= 1) {
-			DEBUG == Parser && printf("end of elf\n");
-			cElf = &((*cElf)->next);
+			elves.total += 1;
 			continue;
 		}
 
 		// non-blank line - new food
-		(*cElf)->calories += atoi(line);
+		elves.elves[elves.total] += atoi(line);
 	}
 
-	free(line);
 	fclose(fp);
 
 	if(DEBUG == Parser) {
-		for(elf_t* rElf = root; rElf; rElf = rElf->next) {
-			printf("elf (%u)\n", rElf->calories);
+		for(uint16_t i = 0; i < elves.total; i++) {
+			printf("elf %u: %u\n", i, elves.elves[i]);
 		}
 	}
 
-	return root;
+	return elves;
 }
 
-void freeElf(elf_t* elf) {
-	if(elf) {
-		freeElf(elf->next);
-		free(elf);
-	}
-}
-
-uint32_t part1(elf_t* root) {
+uint32_t part1(input_t* elf) {
 	uint32_t highest = 0;
-	uint32_t current;
-	for(elf_t* celf = root; celf; celf = celf->next) {
-		if(celf->calories > highest) {
-			highest = celf->calories;
+	for(uint16_t i = 0; i < elf->total; i++) {
+		if(elf->elves[i] > highest) {
+			highest = elf->elves[i];
 		}
 	}
 
@@ -86,41 +83,42 @@ uint32_t part1(elf_t* root) {
 }
 
 void insertHighest(uint32_t* highest, uint32_t current) {
-	uint32_t* maxDiff = NULL;
+	uint32_t* maxDiff = &current;
 	int32_t diff;
+	DEBUG == Part2 && printf("checking %u against (%u, %u, %u)\n", current, highest[0], highest[1], highest[2]);
 	for(int i = 0; i < HIGHEST_CALORIE_BUFFER_SIZE; i++) {
-		DEBUG == Part2 && printf("checking %u against (%u, %u, %u)\n", current, highest[0], highest[1], highest[2]);
 		diff = current - highest[i];
-		if((maxDiff == NULL && diff > 0) || (maxDiff != NULL && diff > (int32_t)(current - *maxDiff))) {
+		if(diff > (int32_t)(current - *maxDiff)) {
 			DEBUG == Part2 && maxDiff && printf("%i > %i\n", diff, (current - *maxDiff));
 			maxDiff = &highest[i];
 		}
 	}
 
-	if(maxDiff) {
-		DEBUG == Part2 && printf("%u -> %u\n", *maxDiff, current);
-		*maxDiff = current;
-	}
+	DEBUG == Part2 && printf("%u -> %u\n", *maxDiff, current);
+	*maxDiff = current;
 	return;
 }
 
-uint32_t part2(elf_t* root) {
+uint32_t part2(input_t *elf) {
 	uint32_t highest[HIGHEST_CALORIE_BUFFER_SIZE] = { 0, 0, 0 };
 	uint32_t current;
-	for(elf_t* celf = root; celf; celf = celf->next) {
-		insertHighest(highest, celf->calories);
+
+	for(uint16_t i = 0; i < elf->total; i++) {
+		insertHighest(highest, elf->elves[i]);
 	}
 
 	return highest[0] + highest[1] + highest[2];
 }
 
 int main() {
-	elf_t* testInput = parseInput("test.txt");
-	elf_t* realInput = parseInput("data.txt");
-	assert(part1(testInput) == 24000);
-	printf("highest: %i\n", part1(realInput));
-	assert(part2(testInput) == 45000);
-	printf("highest 3: %i\n", part2(realInput));
-	freeElf(testInput);
-	freeElf(realInput);
+	input_t testInput = parseInput("test.txt");
+	input_t realInput = parseInput("data.txt");
+	assert(part1(&testInput) == 24000);
+	start_timer();
+	printf("highest: %i\n", part1(&realInput));
+	end_timer();
+	assert(part2(&testInput) == 45000);
+	start_timer();
+	printf("highest 3: %i\n", part2(&realInput));
+	end_timer();
 }

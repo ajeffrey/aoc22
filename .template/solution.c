@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <assert.h>
+#include <time.h>
 
 enum debug {
 	None = 0,
@@ -13,54 +14,52 @@ enum debug {
 #define LINE_SIZE 256
 #define DEBUG None
 
-typedef struct node_t {
-  struct node_t* next;
-} node_t;
+typedef struct input_t {
+} input_t;
 
-node_t* mkNode() {
-	node_t* node = (node_t*)malloc(sizeof(node_t));
-	node->next = NULL;
-	return node;
+struct timespec start, end;
+
+void start_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 }
 
-node_t* parseInput(const char* path) {
+void end_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
+    printf("= %.9fs\n", diff);
+}
+
+input_t parseInput(const char* path) {
 	FILE* fp = fopen(path, "r");
 
-	node_t* root = NULL;
-	node_t** cnode = &root;
+	input_t input;
 
-	char* line = (char*)malloc(LINE_SIZE);
+	char line[LINE_SIZE];
 	while(fgets(line, LINE_SIZE - 1, fp)) {
 	}
 
-	free(line);
 	fclose(fp);
 
-	return root;
+	return input;
 }
 
-void freeInput(node_t* input) {
-  if(input) {
-    freeInput(input->next);
-    free(input);
-  }
-}
-
-int part1(node_t* root) {
+int part1(input_t* input) {
 	return 0;
 }
 
-int part2(node_t* root) {
+int part2(input_t* input) {
 	return 0;
 }
 
 int main() {
-	node_t* testInput = parseInput("test.txt");
-	node_t* realInput = parseInput("data.txt");
-	assert(part1(testInput));
-	printf("part 1: %i\n", part1(realInput));
-	assert(part2(testInput));
-	printf("part 2: %i\n", part2(realInput));
-	freeInput(testInput);
-	freeInput(realInput);
+	input_t testInput = parseInput("test.txt");
+	input_t realInput = parseInput("data.txt");
+	assert(part1(&testInput));
+  start_timer();
+	printf("part 1: %i\n", part1(&realInput));
+  end_timer();
+	assert(part2(&testInput));
+  start_timer();
+	printf("part 2: %i\n", part2(&realInput));
+  end_timer();
 }

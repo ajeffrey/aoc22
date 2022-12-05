@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <assert.h>
+#include <time.h>
 
 enum debug {
 	None = 0,
@@ -11,51 +12,56 @@ enum debug {
 };
 
 #define LINE_SIZE 256
-#define DEBUG Part2
+#define DEBUG None
+#define MAX_ROUNDS 4095
 
-typedef struct node_t {
-	uint8_t you;
-	uint8_t me;
-  struct node_t* next;
-} node_t;
+struct timespec start, end;
 
-node_t* mkNode(uint8_t you, uint8_t me) {
-	node_t* node = (node_t*)malloc(sizeof(node_t));
-	node->you = you;
-	node->me = me;
-	node->next = NULL;
-	return node;
+void start_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 }
 
-node_t* parseInput(const char* path) {
+void end_timer() {
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
+    printf("= %.9fs\n", diff);
+}
+
+typedef struct round_t {
+	uint8_t you;
+	uint8_t me;
+} round_t;
+
+typedef struct input_t {
+	uint16_t total;
+	round_t rounds[MAX_ROUNDS];
+} input_t;
+
+input_t parseInput(const char* path) {
 	FILE* fp = fopen(path, "r");
 
-	node_t* root = NULL;
-	node_t** cnode = &root;
+	input_t input;
+	input.total = 0;
+	memset(input.rounds, 0x00, sizeof(round_t) * MAX_ROUNDS);
 
-	char* line = (char*)malloc(LINE_SIZE);
+	char line[LINE_SIZE];
 	while(fgets(line, LINE_SIZE - 1, fp)) {
-		*cnode = mkNode((uint8_t)line[0] - 'A', (uint8_t)line[2] - 'X');
-		cnode = &((*cnode)->next);
+		input.rounds[input.total].you = (uint8_t)line[0] - 'A';
+		input.rounds[input.total].me = (uint8_t)line[2] - 'X';
+		input.total += 1;
 	}
 
 	if(DEBUG == Parser) {
-		for(node_t* node = root; node; node = node->next) {
-			printf("%c %c\n", node->you, node->me);
+		round_t* round;
+		for(uint16_t i = 0; i < input.total; i++) {
+			round = &input.rounds[i];
+			printf("%i %i\n", round->you, round->me);
 		}
 	}
 
-	free(line);
 	fclose(fp);
 
-	return root;
-}
-
-void freeInput(node_t* input) {
-  if(input) {
-    freeInput(input->next);
-    free(input);
-  }
+	return input;
 }
 
 // TT
@@ -67,50 +73,57 @@ void freeInput(node_t* input) {
 
 
 // r = i - u + 1
-int result(uint8_t you, uint8_t me) {
+inline int result(uint8_t you, uint8_t me) {
 	return 3 * (((int8_t)me - (int8_t)you + 4) % 3);
 } 
 
-int price(uint8_t move) {
+inline int price(uint8_t move) {
 	return 1 + move;
 }
 
-int score(uint8_t you, uint8_t me) {
+inline int score(uint8_t you, uint8_t me) {
 	return result(you, me) + price(me);
 }
 
-uint8_t rightmove(node_t* node) {
-	return (node->me + node->you + 2) % 3;
+uint8_t rightmove(round_t* round) {
+	return (round->me + round->you + 2) % 3;
 }
 
-int part1(node_t* root) {
+int part1(input_t* input) {
 	int total = 0;
-	for(node_t* node = root; node; node = node->next) {
-		DEBUG == Part1 && printf("%i (%i + %i)\n", score(node->you, node->me), result(node->you, node->me), price(node->me));
-		total += score(node->you, node->me);
+	round_t* round;
+	for(uint16_t i = 0; i < input->total; i++) {
+		round = &input->rounds[i];
+		DEBUG == Part1 && printf("(%i %i) %i (%i + %i)\n", round->you, round->me, score(round->you, round->me), result(round->you, round->me), price(round->me));
+		total += score(round->you, round->me);
 	}
 
 	return total;
 }
 
-int part2(node_t* root) {
+int part2(input_t* input) {
 	int total = 0;
-	for(node_t* node = root; node; node = node->next) {
-		uint8_t move = rightmove(node);
-		DEBUG == Part2 && printf("move = %i (%i, %i)\n", move, node->you, node->me);
-		total += score(node->you, move);
+	round_t* round;
+	for(uint16_t i = 0; i < input->total; i++) {
+		round = &input->rounds[i];
+		uint8_t move = rightmove(round);
+		DEBUG == Part2 && printf("move = %i (%i, %i)\n", move, round->you, round->me);
+		total += score(round->you, move);
 	}
 
 	return total;
 }
 
 int main() {
-	node_t* testInput = parseInput("test.txt");
-	node_t* realInput = parseInput("data.txt");
-	assert(part1(testInput) == 15);
-	printf("part 1: %i\n", part1(realInput));
-	assert(part2(testInput) == 12);
-	printf("part 2: %i\n", part2(realInput));
-	freeInput(testInput);
-	freeInput(realInput);
+	input_t testInput = parseInput("test.txt");
+	input_t realInput = parseInput("data.txt");
+	printf("part 1: %i\n", part1(&testInput));
+	assert(part1(&testInput) == 15);
+	start_timer();
+	printf("part 1: %i\n", part1(&realInput));
+	end_timer();
+	assert(part2(&testInput) == 12);
+	start_timer();
+	printf("part 2: %i\n", part2(&realInput));
+	end_timer();
 }
