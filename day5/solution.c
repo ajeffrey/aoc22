@@ -144,9 +144,11 @@ input_t parseInput(const char* path) {
 	return input;
 }
 
-int part1(input_t* input) {
+char* part1(input_t* input) {
 	boxstack_t* cbox;
 	move_t* cmove;
+	char* answer = calloc(input->n_stacks + 1, sizeof(char));
+	memset(answer, 0x00, (input->n_stacks + 1) * sizeof(char));
 	if(DEBUG == Part1) {
 		printf("init--\n");
 		print_stacks(input);
@@ -166,16 +168,19 @@ int part1(input_t* input) {
 	}
 
 	for(int i = 0; i < input->n_stacks; i++) {
-		printf("%c", input->stacks[i]->value);
+		answer[i] = input->stacks[i]->value;
 	}
 	printf("\n");
-	return 0;
+	return answer;
 }
 
-int part2(input_t* input) {
+char* part2(input_t* input) {
 	boxstack_t* startbox;
 	boxstack_t* endbox;
 	move_t* cmove;
+	char* answer = calloc(input->n_stacks + 1, sizeof(char));
+	memset(answer, 0x00, (input->n_stacks + 1) * sizeof(char));
+
 	if(DEBUG == Part2) {
 		printf("init--\n");
 		print_stacks(input);
@@ -199,10 +204,9 @@ int part2(input_t* input) {
 	}
 
 	for(int i = 0; i < input->n_stacks; i++) {
-		printf("%c", input->stacks[i]->value);
+		answer[i] = input->stacks[i]->value;
 	}
-	printf("\n");
-	return 0;
+	return answer;
 }
 
 int main() {
@@ -211,10 +215,10 @@ int main() {
 	input_t realInput2 = parseInput("data.txt");
 	// assert(part1(&testInput));
   start_timer();
-	printf("part 1: %i\n", part1(&realInput));
+	printf("part 1: %s\n", part1(&realInput));
   end_timer();
 	// assert(part2(&testInput));
   start_timer();
-	printf("part 2: %i\n", part2(&realInput2));
+	printf("part 2: %s\n", part2(&realInput2));
   end_timer();
 }
