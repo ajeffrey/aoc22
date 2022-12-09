@@ -12,7 +12,7 @@ enum debug {
 };
 
 #define LINE_SIZE 256
-#define DEBUG Part2
+#define DEBUG None
 #define MAX_LINES 256
 
 typedef struct input_t {
@@ -29,8 +29,8 @@ void start_timer() {
 
 void end_timer() {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
-    printf("= %.9fs\n", diff);
+    uint32_t diff = ((end.tv_sec - start.tv_sec) * 1e6) + ((end.tv_nsec - start.tv_nsec) / 1e3);
+    printf("= %i µs\n", diff);
 }
 
 input_t parseInput(const char* path) {

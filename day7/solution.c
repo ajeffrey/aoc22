@@ -14,7 +14,7 @@ enum debug {
 };
 
 #define LINE_SIZE 256
-#define DEBUG Part2
+#define DEBUG None
 #define MAX_DEPTH 64
 #define MAX_CHILDREN 64
 #define MAX_NODES 256
@@ -45,8 +45,8 @@ void start_timer() {
 
 void end_timer() {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
-    printf("= %.9fs\n", diff);
+    uint32_t diff = ((end.tv_sec - start.tv_sec) * 1e6) + ((end.tv_nsec - start.tv_nsec) / 1e3);
+    printf("= %i µs\n", diff);
 }
 
 char* rdline(char* line, FILE* fp) {
@@ -207,7 +207,7 @@ uint32_t smallestdir(node_t* root, uint32_t gt) {
 int part2(node_t* root) {
 	uint32_t freespace = 70000000 - nodesize(root);
 	uint32_t needed = 30000000 - freespace;
-	printf("needed: %i\n", needed);
+	DEBUG == Part2 && printf("needed: %i\n", needed);
 	return smallestdir(root, needed);
 }
 

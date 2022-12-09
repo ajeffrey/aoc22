@@ -23,8 +23,8 @@ void start_timer() {
 
 void end_timer() {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-    double diff = (double)(end.tv_sec - start.tv_sec) + ((double)(end.tv_nsec - start.tv_nsec)) / 1e9;
-    printf("= %.9fs\n", diff);
+    uint32_t diff = ((end.tv_sec - start.tv_sec) * 1e6) + ((end.tv_nsec - start.tv_nsec) / 1e3);
+    printf("= %i µs\n", diff);
 }
 
 typedef struct round_t {
